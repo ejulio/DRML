@@ -40,7 +40,7 @@ Changed `LayerParameter` in caffe.proto to add
 `optional SpliceParameter splice_param = 148;`
 
 Summary:
----------
+-----
 
 Created files:
 - include/caffe/layers/multilabel_image_data_layer.hpp
@@ -61,6 +61,7 @@ Changed files:
 - src/caffe/layers/multilabel_image_data_layer.cpp
 
 This is the original READE.md
+-----
 
 Intro
 -----
