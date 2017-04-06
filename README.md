@@ -4,37 +4,43 @@ These are the changes:
 
 Separate layers in different files `.hpp`, `.cpp`, e `.cu`
 
-Add *BoxParameter box_param* in *message LayerParameter { ... }* in caffe.proto
+Add `BoxParameter box_param` in `message LayerParameter { ... }` in caffe.proto
 
 Add BoxParameter definition
-    message BoxParameter {
-      required uint32 width = 1;
-      required uint32 height = 2;
+```
+message BoxParameter {
+  required uint32 width = 1;
+  required uint32 height = 2;
 
-      repeated uint32 xcoord = 3;
-      repeated uint32 ycoord = 4;
-    }
+  repeated uint32 xcoord = 3;
+  repeated uint32 ycoord = 4;
+}
+```
 
-Add the parameter *optional uint32 multilabel_num = 13;* in *message ImageDataParameter {* in caffe.proto
+Added the parameter `optional uint32 multilabel_num = 13;` in `message ImageDataParameter {` in caffe.proto
 
-Changed *this->JoinPrefetchThread();* to *this->StopInternalThread();* in multilabel_image_data_layer.cpp
+Changed `this->JoinPrefetchThread();` to `this->StopInternalThread();` in multilabel_image_data_layer.cpp
 
-Changed *this->prefetch_data_* and *this->prefetch_label_* to:
-_Batch<Dtype>* batch = prefetch_full_.pop("Data layer prefetch queue empty");_
-*batch->data_ and batch->label_*
+Changed `this->prefetch_data_` and `this->prefetch_label_` to:
+`Batch<Dtype>* batch = prefetch_full_.pop("Data layer prefetch queue empty");`
+`batch->data_ and batch->label_`
 
-Changed *InternalThreadEntry* to _load_batch(Batch<Dtype>* batch)_ in multilabel_image_data_layer.cpp
-Changed *InternalThreadEntry* to _load_batch(Batch<Dtype>* batch)_ in multilabel_image_data_layer.hpp
+Changed `InternalThreadEntry` to `load_batch(Batch<Dtype>* batch)` in multilabel_image_data_layer.cpp
+Changed `InternalThreadEntry` to `load_batch(Batch<Dtype>* batch)` in multilabel_image_data_layer.hpp
 
 Changed caffe.proto adding:
+```
 message SpliceParameter {
   repeated uint32 xcoord = 1;
   repeated uint32 ycoord = 2;
 }
-and changing *LayerParameter* to add
-optional SpliceParameter splice_param = 148;
+```
+
+Changed `LayerParameter` in caffe.proto to add
+`optional SpliceParameter splice_param = 148;`
 
 Summary:
+---------
 
 Created files:
 - include/caffe/layers/multilabel_image_data_layer.hpp
