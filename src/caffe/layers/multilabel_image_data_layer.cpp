@@ -6,7 +6,7 @@
 #include <utility>
 #include <vector>
 
-#include "caffe/data_layers.hpp"
+#include "caffe/layers/multilabel_image_data_layer.hpp"
 #include "caffe/layer.hpp"
 #include "caffe/util/benchmark.hpp"
 #include "caffe/util/io.hpp"
@@ -17,7 +17,7 @@ namespace caffe {
 
 template <typename Dtype>
 MultilabelImageDataLayer<Dtype>::~MultilabelImageDataLayer<Dtype>() {
-  this->JoinPrefetchThread();
+   this->StopInternalThread();
 }
 
 template <typename Dtype>
@@ -75,14 +75,21 @@ void MultilabelImageDataLayer<Dtype>::DataLayerSetUp(const vector<Blob<Dtype>*>&
   // image
   const int crop_size = this->layer_param_.transform_param().crop_size();
   const int batch_size = this->layer_param_.image_data_param().batch_size();
+  
   if (crop_size > 0) {
     top[0]->Reshape(batch_size, channels, crop_size, crop_size);
-    this->prefetch_data_.Reshape(batch_size, channels, crop_size, crop_size);
     this->transformed_data_.Reshape(1, channels, crop_size, crop_size);
   } else {
     top[0]->Reshape(batch_size, channels, height, width);
-    this->prefetch_data_.Reshape(batch_size, channels, height, width);
     this->transformed_data_.Reshape(1, channels, height, width);
+  }
+
+  for (int i = 0; i < this->PREFETCH_COUNT; ++i) {
+    if (crop_size > 0) {
+      this->prefetch_[i].data_.Reshape(batch_size, channels, crop_size, crop_size);
+    } else {
+      this->prefetch_[i].data_.Reshape(batch_size, channels, height, width);
+    }
   }
   LOG(INFO) << "output data size: " << top[0]->num() << ","
       << top[0]->channels() << "," << top[0]->height() << ","
@@ -90,10 +97,11 @@ void MultilabelImageDataLayer<Dtype>::DataLayerSetUp(const vector<Blob<Dtype>*>&
 
   // multilabel
   if (this->output_labels_) {
-    vector<int> label_shape(1, batch_size);
     top[1]->Reshape(batch_size, multilabel_num, 1, 1);
     LOG(INFO) << top[1];
-    this->prefetch_label_.Reshape(batch_size, multilabel_num, 1, 1);
+    for (int i = 0; i < this->PREFETCH_COUNT; ++i) {
+      this->prefetch_[i].label_.Reshape(batch_size, multilabel_num, 1, 1);
+    }
   }
 }
 
@@ -106,13 +114,13 @@ void MultilabelImageDataLayer<Dtype>::ShuffleImages() {
 
 // This function is used to create a thread that prefetches the data.
 template <typename Dtype>
-void MultilabelImageDataLayer<Dtype>::InternalThreadEntry() {
+void MultilabelImageDataLayer<Dtype>::load_batch(Batch<Dtype>* batch) {
   CPUTimer batch_timer;
   batch_timer.Start();
   double read_time = 0;
   double trans_time = 0;
   CPUTimer timer;
-  CHECK(this->prefetch_data_.count());
+  CHECK(batch->data_.count());
   CHECK(this->transformed_data_.count());
   ImageDataParameter image_data_param = this->layer_param_.image_data_param();
   const int batch_size = image_data_param.batch_size();
@@ -126,14 +134,14 @@ void MultilabelImageDataLayer<Dtype>::InternalThreadEntry() {
   if (batch_size == 1 && crop_size == 0 && new_height == 0 && new_width == 0) {
     cv::Mat cv_img = ReadImageToCVMat(root_folder + lines_[lines_id_].first,
         0, 0, is_color);
-    this->prefetch_data_.Reshape(1, cv_img.channels(),
+    batch->data_.Reshape(1, cv_img.channels(),
         cv_img.rows, cv_img.cols);
     this->transformed_data_.Reshape(1, cv_img.channels(),
         cv_img.rows, cv_img.cols);
   }
 
-  Dtype* prefetch_data = this->prefetch_data_.mutable_cpu_data();
-  Dtype* prefetch_label = this->prefetch_label_.mutable_cpu_data();
+  Dtype* prefetch_data = batch->data_.mutable_cpu_data();
+  Dtype* prefetch_label = batch->label_.mutable_cpu_data();
 
   // datum scales
   const int lines_size = lines_.size();
@@ -147,7 +155,7 @@ void MultilabelImageDataLayer<Dtype>::InternalThreadEntry() {
     read_time += timer.MicroSeconds();
     timer.Start();
     // Apply transformations (mirror, crop...) to the image
-    int offset = this->prefetch_data_.offset(item_id);
+    int offset = batch->data_.offset(item_id);
     this->transformed_data_.set_cpu_data(prefetch_data + offset);
     this->data_transformer_->Transform(cv_img, &(this->transformed_data_));
     trans_time += timer.MicroSeconds();

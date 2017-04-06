@@ -1,13 +1,12 @@
 #include <algorithm>
 #include <vector>
 
+#include "caffe/layers/box_layer.hpp"
 #include "caffe/layer.hpp"
 #include "caffe/util/math_functions.hpp"
-#include "caffe/vision_layers.hpp"
-
+#include "caffe/layer_factory.hpp"
 
 namespace caffe {
-
 
 template <typename Dtype>
 void BoxLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bottom,
@@ -40,7 +39,6 @@ void BoxLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bottom,
     
 }
 
-
 template <typename Dtype>
 void BoxLayer<Dtype>::Reshape(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top) {
@@ -49,8 +47,6 @@ void BoxLayer<Dtype>::Reshape(const vector<Blob<Dtype>*>& bottom,
                        height_, width_);
     }
 }
-
-
 
 
 /* copy only clipped region */

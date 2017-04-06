@@ -2,9 +2,9 @@
 #include <cfloat>
 #include <vector>
 
+#include "caffe/layers/multi_sigmoid_cross_entropy_loss_layer.hpp"
 #include "caffe/layer.hpp"
 #include "caffe/util/math_functions.hpp"
-#include "caffe/vision_layers.hpp"
 
 namespace caffe {
 
@@ -43,8 +43,8 @@ void MultiSigmoidCrossEntropyLossLayer<Dtype>::Forward_cpu(
   Dtype loss = 0;
   for (int i = 0; i < count; ++i) {
     if (target[i] != 0){
-    loss -= input_data[i] * ((target[i] > 0) - (input_data[i] >= 0)) -
-          log(1 + exp(input_data[i] - 2 * input_data[i] * (input_data[i] >= 0)));;
+      loss -= input_data[i] * ((target[i] > 0) - (input_data[i] >= 0)) -
+        log(1 + exp(input_data[i] - 2 * input_data[i] * (input_data[i] >= 0)));
     }
     if (top.size() >= 1) {
       top[0]->mutable_cpu_data()[0] = loss / num;
