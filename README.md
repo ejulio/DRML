@@ -2,7 +2,7 @@ This repository contains some changes that I've made to DRML in order to make it
 
 These are the changes:
 
-Separate layers in different files .hpp, .cpp, e .cu
+Separate layers in different files `.hpp`, `.cpp`, e `.cu`
 
 Add *BoxParameter box_param* in *message LayerParameter { ... }* in caffe.proto
 
